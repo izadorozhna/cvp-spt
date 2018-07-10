@@ -17,7 +17,7 @@ def test_hw2hw (local_salt_client,hw_pair,record_property):
     short_name = []
     short_name.append(hw_pair[0].split('.')[0])
     short_name.append(hw_pair[1].split('.')[0])
-    nets = config.get('networks')
+    nets = config.get('networks').split(',')
     local_salt_client.cmd(expr_form='compound', tgt=str(hw_pair[0]+' or '+hw_pair[1]),
                           fun='cmd.run', param=['nohup iperf -s > file 2>&1 &'])
     global_results = []

@@ -19,12 +19,10 @@ SALT_PASSWORD: <PASSWORD>
 # How many seconds to wait for salt-minion to respond
 salt_timeout: 1
 
-# List of nodes (full fqdn) to skip in ALL tests
-# Use as env variable as
-# export skipped_nodes=mtr01.local,log02.local
 image_name: "Ubuntu"
 skipped_nodes: []
-networks: ["10.101.0.0/24"]
+# example for Jenkins: networks=net1,net2
+networks: "10.101.0.0/24"
 HW_NODES: []
 CMP_HOSTS: []
 nova_timeout: 30
