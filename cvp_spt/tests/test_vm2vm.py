@@ -46,13 +46,16 @@ def test_vm2vm (openstack_clients, pair, os_resources, record_property):
         vms = []
         vms.extend([vm1,vm2,vm3,vm4])
         fips = []
+        time.sleep(5)
         for i in range(4):
             fip = openstack_clients.compute.floating_ips.create(os_resources['ext_net']['name'])
             fips.append(fip.id)
-            if vms[i].status != 'Active':
-                print "VM #{0} {1} is not ready. Status {2}".format(i,vms[i].id,vms[i].status)
+            status = openstack_clients.compute.servers.get(vms[i]).status
+            if status != 'ACTIVE':
+                print "VM #{0} {1} is not ready. Status {2}".format(i,vms[i].id,status)
                 time.sleep(timeout)
-            if vms[i].status != 'Active':
+                status = openstack_clients.compute.servers.get(vms[i]).status
+            if status != 'ACTIVE':
                 raise Exception('VM is not ready')
             vms[i].add_floating_ip(fip)
             private_address = vms[i].addresses[vms[i].addresses.keys()[0]][0]['addr']
@@ -97,3 +100,4 @@ def test_vm2vm (openstack_clients, pair, os_resources, record_property):
             openstack_clients.compute.servers.delete(vm)
         for fip in fips:
             openstack_clients.compute.floating_ips.delete(fip)
+        pytest.fail("Something went wrong")
