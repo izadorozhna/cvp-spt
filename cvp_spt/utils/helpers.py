@@ -49,7 +49,7 @@ class helpers(object):
             tab.add_row(row)
         s = tab.draw()
         print s
-     
+
     def start_iperf_client(self, minion_name, target_ip, thread_count=None):
         iperf_command = 'iperf -c {0}'.format(target_ip)
         if thread_count:
@@ -58,9 +58,8 @@ class helpers(object):
                                             fun='cmd.run',
                                             param=[iperf_command])
         result = output.values()[0].split('\n')[-1].split(' ')[-2:]
-        #import pdb;pdb.set_trace()
         if result[1] == 'Mbits/sec':
-            return result[0]*0.001
+            return str(float(result[0])*0.001)
         if result[1] != 'Gbits/sec':
             return "0"
         return result[0]
