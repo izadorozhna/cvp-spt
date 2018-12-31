@@ -27,6 +27,9 @@ def openstack_clients(local_salt_client):
         'keystone:server', 'pillar.get',
         ['keystone:server'],
         expr_form='pillar')
+    if nodes_info.__len__() < 1:
+        pytest.skip("No keystone server found")
+        return False
     keystone = nodes_info[nodes_info.keys()[0]]
     url = 'http://{0}:{1}/v2.0'.format(keystone['bind']['private_address'],
                                        keystone['bind']['private_port'])

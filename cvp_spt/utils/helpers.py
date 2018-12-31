@@ -31,6 +31,9 @@ class helpers(object):
         backward += reverse_raw_results + " Gbits/sec"
         global_results.append([node_i, node_j,
                                net_name, forward, backward])
+
+        self.kill_iperf_processes(node_i)
+        self.kill_iperf_processes(node_j)
         return result
 
     def draw_table_with_results(self, global_results):
@@ -51,15 +54,26 @@ class helpers(object):
         print s
 
     def start_iperf_client(self, minion_name, target_ip, thread_count=None):
-        iperf_command = 'iperf -c {0}'.format(target_ip)
+        iperf_command = 'timeout --kill-after=20 19 iperf -c {0}'.format(target_ip)
         if thread_count:
             iperf_command += ' -P {0}'.format(thread_count)
         output = self.local_salt_client.cmd(tgt=minion_name,
                                             fun='cmd.run',
                                             param=[iperf_command])
-        result = output.values()[0].split('\n')[-1].split(' ')[-2:]
-        if result[1] == 'Mbits/sec':
-            return str(float(result[0])*0.001)
-        if result[1] != 'Gbits/sec':
-            return "0"
-        return result[0]
+        # self.kill_iperf_processes(minion_name)
+        try:
+            result = output.values()[0].split('\n')[-1].split(' ')[-2:]
+            if result[1] == 'Mbits/sec':
+                return str(float(result[0])*0.001)
+            if result[1] != 'Gbits/sec':
+                return "0"
+            return result[0]
+        except:
+            print "No iperf result between {} and {} (maybe they don't have connectivity)".format(minion_name, target_ip)
+
+
+    def kill_iperf_processes(self, minion_name):
+        kill_command = "for pid in $(pgrep  iperf); do kill $pid; done"
+        output = self.local_salt_client.cmd(tgt=minion_name,
+                                            fun='cmd.run',
+                                            param=[kill_command])
