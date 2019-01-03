@@ -23,6 +23,7 @@ def hw_pair(request):
 
 @pytest.fixture(scope='session')
 def openstack_clients(local_salt_client):
+    keystone_api_version = utils.get_configuration().get("keystone_api_version")
     nodes_info = local_salt_client.cmd(
         'keystone:server', 'pillar.get',
         ['keystone:server'],
@@ -31,15 +32,16 @@ def openstack_clients(local_salt_client):
         pytest.skip("No keystone server found")
         return False
     keystone = nodes_info[nodes_info.keys()[0]]
-    url = 'http://{0}:{1}/v2.0'.format(keystone['bind']['private_address'],
-                                       keystone['bind']['private_port'])
+    url = 'http://{ip}:{port}/{api_version}'.format(ip=keystone['bind']['private_address'],
+                                                    port=keystone['bind']['private_port'],
+                                                    api_version="v3" if (keystone_api_version is None) else keystone_api_version)
     return os_client.OfficialClientManager(
-            username=keystone['admin_name'],
-            password=keystone['admin_password'],
-            tenant_name=keystone['admin_tenant'],
-            auth_url=url,
-            cert=False,
-            domain='Default',
+        username=keystone['admin_name'],
+        password=keystone['admin_password'],
+        tenant_name=keystone['admin_tenant'],
+        auth_url=url,
+        cert=False,
+        domain='Default',
         )
 
 @pytest.fixture(scope='session')
@@ -49,14 +51,14 @@ def os_resources(openstack_clients):
     config = utils.get_configuration()
     image_name = config.get('image_name') or ['Ubuntu']
     os_resource['image_id'] = str([image.id for image in openstack_clients.image.images.list(filters={'name': image_name})][0])
-    
+
     if not os_resource['image_id']:
         print "No image ID. Exiting"
         exit()
-    
+
     os_resource['flavor_id'] = [flavor.id for flavor in openstack_clients.compute.flavors.list() if flavor.name == 'spt-test']
     if not os_resource['flavor_id']:
-        os_resource['flavor_id'] = os_actions.create_flavor('spt-test',1536,1,3).id
+        os_resource['flavor_id'] = os_actions.create_flavor('spt-test', 1536, 1, 3).id
     else:
         os_resource['flavor_id'] = str(os_resource['flavor_id'][0])
 
@@ -65,15 +67,15 @@ def os_resources(openstack_clients):
     os_resource['net1'] = os_actions.create_network_resources()
     os_resource['ext_net'] = os_actions.get_external_network()
     adm_tenant = os_actions.get_admin_tenant()
-    os_resource['router'] = os_actions.create_router(os_resource['ext_net'],adm_tenant.id)
+    os_resource['router'] = os_actions.create_router(os_resource['ext_net'], adm_tenant.id)
     os_resource['net2'] = os_actions.create_network(adm_tenant.id)
-    os_resource['subnet2'] = os_actions.create_subnet(os_resource['net2'],adm_tenant,'10.2.7.0/24')
+    os_resource['subnet2'] = os_actions.create_subnet(os_resource['net2'], adm_tenant, '10.2.7.0/24')
     for subnet in openstack_clients.network.list_subnets()['subnets']:
         if subnet['network_id'] == os_resource['net1']['id']:
             os_resource['subnet1'] = subnet['id']
-    
-    openstack_clients.network.add_interface_router(os_resource['router']['id'],{'subnet_id': os_resource['subnet1']})
-    openstack_clients.network.add_interface_router(os_resource['router']['id'],{'subnet_id': os_resource['subnet2']['id']})
+
+    openstack_clients.network.add_interface_router(os_resource['router']['id'], {'subnet_id': os_resource['subnet1']})
+    openstack_clients.network.add_interface_router(os_resource['router']['id'], {'subnet_id': os_resource['subnet2']['id']})
     yield os_resource
     #time.sleep(5)
     openstack_clients.network.remove_interface_router(os_resource['router']['id'], {'subnet_id': os_resource['subnet1']})
@@ -81,14 +83,12 @@ def os_resources(openstack_clients):
     openstack_clients.network.remove_gateway_router(os_resource['router']['id'])
     time.sleep(5)
     openstack_clients.network.delete_router(os_resource['router']['id'])
-    
     time.sleep(5)
-    
     #openstack_clients.network.delete_subnet(subnet1['id'])
     openstack_clients.network.delete_network(os_resource['net1']['id'])
     openstack_clients.network.delete_network(os_resource['net2']['id'])
-    
+
     openstack_clients.compute.security_groups.delete(os_resource['sec_group'].id)
     openstack_clients.compute.keypairs.delete(os_resource['keypair'].name)
-    
+
     openstack_clients.compute.flavors.delete(os_resource['flavor_id'])

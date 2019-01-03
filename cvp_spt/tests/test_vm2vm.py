@@ -10,7 +10,7 @@ from cvp_spt.utils import ssh
 def test_vm2vm (openstack_clients, pair, os_resources, record_property):
     os_actions = os_client.OSCliActions(openstack_clients)
     config = utils.get_configuration()
-    timeout = int(config.get('nova_timeout')) or 30
+    timeout = int(config.get('nova_timeout') or 30)
     try:
         zone1 = [service.zone for service in openstack_clients.compute.services.list() if service.host == pair[0]]
         zone2 = [service.zone for service in openstack_clients.compute.services.list() if service.host == pair[1]]
