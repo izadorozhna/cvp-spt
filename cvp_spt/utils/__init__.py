@@ -88,7 +88,7 @@ def get_hw_pairs():
                 expr_form='compound')
         hw_nodes = [node for node in nodes.keys() if node not in skipped_nodes]
     print local_salt_client.cmd(expr_form='compound', tgt="L@"+','.join(hw_nodes),
-                                fun='cmd.run', param=['apt-get install -y iperf'])
+                                fun='pkg.install', param=['iperf'])
     return compile_pairs(hw_nodes)
 
 def get_configuration():
