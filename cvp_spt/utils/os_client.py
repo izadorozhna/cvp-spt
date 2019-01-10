@@ -2,7 +2,7 @@ from cinderclient import client as cinder_client
 from glanceclient import client as glance_client
 from keystoneauth1 import identity as keystone_identity
 from keystoneauth1 import session as keystone_session
-from keystoneclient import client as keystone_client
+from keystoneclient.v3 import client as keystone_client
 from neutronclient.v2_0 import client as neutron_client
 from novaclient import client as novaclient
 
@@ -18,7 +18,7 @@ class OfficialClientManager(object):
 
     CINDERCLIENT_VERSION = 3
     GLANCECLIENT_VERSION = 2
-    KEYSTONECLIENT_VERSION = 2, 0
+    KEYSTONECLIENT_VERSION = 3
     NEUTRONCLIENT_VERSION = 2
     NOVACLIENT_VERSION = 2
     INTERFACE = 'admin'
@@ -72,16 +72,21 @@ class OfficialClientManager(object):
             auth_url = auth_url.replace("http", "https")
 
         if cls.KEYSTONECLIENT_VERSION == (2, 0):
-            #auth_url = "{}{}".format(auth_url, "v2.0/")
+            # auth_url = "{}{}".format(auth_url, "v2.0/")
             auth = keystone_identity.v2.Password(
-                username=username, password=password, auth_url=auth_url,
+                username=username,
+                password=password,
+                auth_url=auth_url,
                 tenant_name=tenant_name)
         else:
-            auth_url = "{}{}".format(auth_url, "v3/")
+            auth_url = "{}{}".format(auth_url, "/v3")
             auth = keystone_identity.v3.Password(
-                auth_url=auth_url, user_domain_name=domain,
-                username=username, password=password,
-                project_domain_name=domain, project_name=tenant_name)
+                auth_url=auth_url,
+                user_domain_name=domain,
+                username=username,
+                password=password,
+                project_domain_name=domain,
+                project_name=tenant_name)
 
         auth_session = keystone_session.Session(auth=auth, verify=cert)
         # auth_session.get_auth_headers()
@@ -92,10 +97,14 @@ class OfficialClientManager(object):
                         tenant_name=None, auth_url=None, cert=None,
                         domain='Default', **kwargs):
         session = cls._get_auth_session(
-            username=username, password=password, tenant_name=tenant_name,
-            auth_url=auth_url, cert=cert, domain=domain)
-        keystone = keystone_client.Client(
-            cls.KEYSTONECLIENT_VERSION, session=session, **kwargs)
+            username=username,
+            password=password,
+            tenant_name=tenant_name,
+            auth_url=auth_url,
+            cert=cert,
+            domain=domain)
+        keystone = keystone_client.Client(version=cls.KEYSTONECLIENT_VERSION,
+                                          session=session, **kwargs)
         keystone.management_url = auth_url
         return keystone
 
@@ -196,12 +205,14 @@ class OfficialClientManager(object):
             )
         return self._image
 
+
 class OSCliActions(object):
     def __init__(self, os_clients):
         self.os_clients = os_clients
 
     def get_admin_tenant(self):
-        return self.os_clients.auth.tenants.find(name="admin")
+        # TODO Keystone v3 doesnt have tenants attribute
+        return self.os_clients.auth.projects.find(name="admin")
 
     # TODO: refactor
     def get_cirros_image(self):

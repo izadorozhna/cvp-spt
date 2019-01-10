@@ -6,8 +6,10 @@ import cvp_spt.utils as utils
 
 @pytest.fixture
 def create_image():
-    line = 'dd if=/dev/zero of=/tmp/image_mk_framework.dd ' \
-           'bs=1M count=9000'
+    line = 'echo "Executing dd on $(hostname -f)"; ' \
+           'dd if=/dev/zero of=/tmp/image_mk_framework.dd bs=1M count=9000 ;' \
+           'echo "Free space :" ; ' \
+           'df -H / '
 
     subprocess.call(line.split())
     yield
