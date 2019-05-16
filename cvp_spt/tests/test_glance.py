@@ -7,7 +7,7 @@ import cvp_spt.utils as utils
 @pytest.fixture
 def create_image():
     line = 'echo "Executing dd on $(hostname -f)"; ' \
-           'dd if=/dev/zero of=/tmp/image_mk_framework.dd bs=1M count=9000 ;' \
+           'dd if=/dev/zero of=/tmp/image_mk_framework.dd bs=1M count=4000 ;' \
            'echo "Free space :" ; ' \
            'df -H / '
 
@@ -35,7 +35,7 @@ def test_speed_glance(create_image, openstack_clients, record_property):
         image_data=open("/tmp/image_mk_framework.dd", 'rb'))
     end_time = time.time()
 
-    speed_upload = 9000 / (end_time - start_time)
+    speed_upload = 4000 / (end_time - start_time)
 
     start_time = time.time()
     with open("/tmp/image_mk_framework.download", 'wb') as image_file:
@@ -43,7 +43,7 @@ def test_speed_glance(create_image, openstack_clients, record_property):
             image_file.write(item)
     end_time = time.time()
 
-    speed_download = 9000 / (end_time - start_time)
+    speed_download = 4000 / (end_time - start_time)
 
     openstack_clients.image.images.delete(image.id)
     record_property("Upload", speed_upload)
