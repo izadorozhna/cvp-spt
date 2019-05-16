@@ -6,16 +6,13 @@ import cvp_spt.utils as utils
 
 @pytest.fixture
 def create_image():
-    line = 'echo "Executing dd on $(hostname -f)"; ' \
-           'dd if=/dev/zero of=/tmp/image_mk_framework.dd bs=1M count=4000 ;' \
-           'echo "Free space :" ; ' \
-           'df -H / '
-
-    subprocess.call(line.split())
+    image_size_megabytes = utils.get_configuration().get("IMAGE_SIZE_MB")
+    line = 'dd if=/dev/zero of=/tmp/image_mk_framework.dd bs=1M count={image_size}'.format(image_size=image_size_megabytes)
+    subprocess.call(line, shell=True)
     yield
     # teardown
-    subprocess.call('rm /tmp/image_mk_framework.dd'.split())
-    subprocess.call('rm /tmp/image_mk_framework.download'.split())
+    subprocess.call('rm -f /tmp/image_mk_framework.dd'.split())
+    subprocess.call('rm -f /tmp/image_mk_framework.download'.split())
 
 
 def test_speed_glance(create_image, openstack_clients, record_property):
@@ -24,6 +21,7 @@ def test_speed_glance(create_image, openstack_clients, record_property):
     1. Step download image
     2. Step upload image
     """
+    image_size_megabytes = utils.get_configuration().get("IMAGE_SIZE_MB")
     image = openstack_clients.image.images.create(
         name="test_image",
         disk_format='iso',
@@ -35,7 +33,7 @@ def test_speed_glance(create_image, openstack_clients, record_property):
         image_data=open("/tmp/image_mk_framework.dd", 'rb'))
     end_time = time.time()
 
-    speed_upload = 4000 / (end_time - start_time)
+    speed_upload = image_size_megabytes / (end_time - start_time)
 
     start_time = time.time()
     with open("/tmp/image_mk_framework.download", 'wb') as image_file:
@@ -43,7 +41,7 @@ def test_speed_glance(create_image, openstack_clients, record_property):
             image_file.write(item)
     end_time = time.time()
 
-    speed_download = 4000 / (end_time - start_time)
+    speed_download = image_size_megabytes / (end_time - start_time)
 
     openstack_clients.image.images.delete(image.id)
     record_property("Upload", speed_upload)
