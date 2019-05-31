@@ -136,10 +136,11 @@ class prepare_iperf(object):
         config = utils.get_configuration()
         preparation_cmd = config.get('iperf_prep_string') or ['']
         transport.exec_command(preparation_cmd)
-        try:
-            transport.exec_command('sudo apt-get update; sudo apt-get install -y iperf')
-        except Exception:
+        offline_iperf = utils.get_configuration().get("offline_iperf")
+        if offline_iperf:
             transport.put_file("/var/lib/cvp-spt/iperf_2.0.5+dfsg1-2_amd64.deb", "/home/ubuntu/iperf_2.0.5+dfsg1-2_amd64.deb")
             transport.exec_command('sudo dpkg -i /home/ubuntu/iperf_2.0.5+dfsg1-2_amd64.deb')
+        else:
+            transport.exec_command('sudo apt-get update; sudo apt-get install -y iperf')
         transport.exec_command("sudo ifconfig ens3 mtu 9100")
         transport.exec_command('nohup iperf -s > file 2>&1 &') 

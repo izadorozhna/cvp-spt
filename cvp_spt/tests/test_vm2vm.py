@@ -72,30 +72,34 @@ def test_vm2vm(openstack_clients, pair, os_resources, record_property):
         transport1 = ssh.SSHTransport(vm_info[0]['fip'], 'ubuntu', password='dd', private_key=os_resources['keypair'].private_key)
 
         result1 = transport1.exec_command('iperf -c {} -t 60 | tail -n 1'.format(vm_info[1]['private_address']))
+        print("same {0}-{1}:".format(zone1[0],zone2[0]), ' '.join(result1.split()[-2::]))
         print(' '.join(result1.split()[-2::]))
-
         record_property("same {0}-{1}".format(zone1[0],zone2[0]), ' '.join(result1.split()[-2::]))
+
         result2 = transport1.exec_command('iperf -c {} -t 60 | tail -n 1'.format(vm_info[2]['private_address']))
+        print("diff host {0}-{1}:".format(zone1[0],zone2[0]), ' '.join(result2.split()[-2::]))
         print(' '.join(result2.split()[-2::]))
-
         record_property("diff host {0}-{1}".format(zone1[0],zone2[0]), ' '.join(result2.split()[-2::]))
+
         result3 = transport1.exec_command('iperf -c {} -P 10 -t 60 | tail -n 1'.format(vm_info[2]['private_address']))
+        print("dif host 10 threads {0}-{1}:".format(zone1[0],zone2[0]), ' '.join(result3.split()[-2::]))
         print(' '.join(result3.split()[-2::]))
-
         record_property("dif host 10 threads {0}-{1}".format(zone1[0],zone2[0]), ' '.join(result3.split()[-2::]))
+
         result4 = transport1.exec_command('iperf -c {} -t 60 | tail -n 1'.format(vm_info[2]['fip']))
+        print("diff host fip {0}-{1}:".format(zone1[0],zone2[0]), ' '.join(result4.split()[-2::]))
         print(' '.join(result4.split()[-2::]))
-
         record_property("diff host fip {0}-{1}".format(zone1[0],zone2[0]), ' '.join(result4.split()[-2::]))
-        result5 = transport1.exec_command('iperf -c {} -t 60 | tail -n 1'.format(vm_info[3]['private_address']))
-        print(' '.join(result5.split()[-2::]))
 
+        result5 = transport1.exec_command('iperf -c {} -t 60 | tail -n 1'.format(vm_info[3]['private_address']))
+        print("diff host, diff net {0}-{1}:".format(zone1[0],zone2[0]), ' '.join(result5.split()[-2::]))
+        print(' '.join(result5.split()[-2::]))
         record_property("diff host, diff net {0}-{1}".format(zone1[0],zone2[0]), ' '.join(result5.split()[-2::]))
 
-        print("Remove VMs")
+        print("Removing VMs")
         for vm in vms:
             openstack_clients.compute.servers.delete(vm)
-        print("Remove FIPs")
+        print("Removing FIPs")
         for fip in fips:
             openstack_clients.compute.floating_ips.delete(fip)
     except Exception as e:
